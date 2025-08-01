@@ -1,0 +1,39 @@
+name: Deploy Node.js App
+
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout your repo code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Setup SSH key for connecting to your server securely
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+        shell: bash
+
+      # 3. Copy project files to server using scp
+      - name: Copy files to server
+        run: |
+          scp -o StrictHostKeyChecking=no -r ./ ubuntu@13.233.125.20:/home/ubuntu/nodejsproject
+        shell: bash
+
+      # 4. SSH to server and restart your app with pm2
+      - name: Restart app on server
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@13.233.125.20 << 'EOF'
+            cd /home/ubuntu/nodejsproject && 
+            pm2 restart all
+          EOF
+        shell: bash
